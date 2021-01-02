@@ -23,6 +23,9 @@
     for the JavaScript code in this page.
 */
 
+
+/* Ths function is taken from https://stackoverflow.com/questions/3665115/how-to-create-a-file-in-memory-for-user-to-download-but-not-through-server 
+ * and is licenced as CC-BY-SA 3.0  */
 function download(filename, text) {
     var element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
@@ -36,9 +39,10 @@ function download(filename, text) {
     document.body.removeChild(element);
   }
 
-document.forms['myform'].elements['myfile'].onchange = function(evt) {
-    if(!window.FileReader) return; // Browser is not compatible
+/* GPL CODE STARTS HERE */
 
+document.forms['inputForm'].elements['inputFile'].onchange = function(evt) {
+    if(!window.FileReader) return; // Browser is not compatible
     var reader = new FileReader();
 
     reader.onload = function(evt) {
@@ -50,13 +54,17 @@ document.forms['myform'].elements['myfile'].onchange = function(evt) {
 
         filecontent = evt.target.result;
 
-        [filename, filetype] = document.forms['myform'].elements['myfile'].files[0].name.split('.');
+        [filename, filetype] = document.forms['inputForm'].elements['inputFile'].files[0].name.split('.');
 
         tracklist = "";
 
         switch(filetype) {
             case 'txt' :
                 tracklist = handle_txt(filecontent);
+                break;
+            case 'm3u8':
+                tracklist = handle_m3u8(filecontent);
+                break;
         }
 
         if (tracklist == "") {
@@ -71,8 +79,8 @@ document.forms['myform'].elements['myfile'].onchange = function(evt) {
     reader.readAsText(evt.target.files[0]);
 };
 
-function handle_txt (filecontent) {
-    data = CSVToArray(filecontent, '\t');
+function handle_txt (filecontents) {
+    data = CSVToArray(filecontents, '\t');
 
     artistFound = false
     trackFound = false
@@ -105,5 +113,16 @@ function handle_txt (filecontent) {
     }
 
     return out_string;
-    //print(out_string);
+}
+
+function handle_m3u8 (filecontents) {
+    out_string = "";
+    fileArray = filecontents.split('\r\n');
+    for (i = 1; i < fileArray.length; i++) {
+        if (fileArray[i][0] == '#') {
+            out_string = out_string.concat(fileArray[i].replace(/^\#EXTINF:\d*,(.*)\ -\ (.*)/, '$1 - $2\r\n'));
+        }
+    }
+
+    return out_string;
 }
